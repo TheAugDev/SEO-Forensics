@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Forensics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display.swap" rel="stylesheet">
+    <style>
+        @layer base {
+            body {
+                font-family: 'Inter', sans-serif;
+            }
+        }
+        .hero-bg {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6, #a855f7);
+            background-size: 200% 200%;
+            animation: gradient-animation 15s ease infinite;
+        }
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .pdf-export-source {
+            position: absolute;
+            left: -9999px;
+            top: auto;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+
+
+        /* Print Styles - used by html2pdf */
+        .print-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e5e7eb; padding-bottom: 1rem; }
+        .print-title { font-size: 2rem; font-weight: 800; color: #111827; }
+        .print-logo { font-weight: 900; color: #3b82f6; }
+        .print-url { font-size: 1.125rem; color: #4b5563; margin-top: 0.5rem; }
+        .print-date { font-size: 1rem; color: #6b7281; }
+        .print-score-container { display: flex; justify-content: center; align-items: center; background: #f9fafb; padding: 2rem; border-radius: 1rem; }
+        .print-gauge svg { width: 150px; height: 150px; }
+        .print-gauge-text { font-size: 3rem; font-weight: 800; }
+        .print-remark { font-size: 1.5rem; font-weight: 700; margin-left: 2rem; }
+        .print-card { page-break-inside: avoid; margin-top: 0; border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1.5rem; }
+        .print-card-title { font-size: 1.25rem; font-weight: 700; color: #111827; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.75rem; margin-bottom: 1rem; }
+        .print-check-item { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f3f4f6; }
+        .print-recs { margin-top: 1rem; background: #fffbeb; border-left: 4px solid #f59e0b; padding: 1rem; }
+        .print-recs-title { font-weight: 700; color: #92400e; }
+        .print-recs-list { list-style-position: inside; list-style-type: disc; margin-top: 0.5rem; color: #92400e; }
+        .print-footer { text-align: center; font-size: 0.875rem; color: #9ca3af; padding-top: 1rem; border-top: 1px solid #e5e7eb; }
+
+        /* New Print Status Styles */
+        .print-check-item span:first-child { flex-grow: 1; margin-right: 1rem; /* Ensure label has space */ }
+        .print-check-item span:last-child { text-align: right; flex-shrink: 0; }
+        .print-status-good { color: #10b981; font-weight: 500; }
+        .print-status-warning { color: #f59e0b; font-weight: 500; }
+        .print-status-bad { color: #ef4444; font-weight: 500; }
+        .print-status-neutral { color: #6b7280; font-weight: 500; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 transition-colors duration-300">
+
+    <div id="page-content">
+        <!-- Homepage -->
+        <div id="homepage">
+             <div class="hero-bg text-white">
+                <div class="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-20 sm:py-24 lg:py-32">
+                    <div class="text-center">
+                        <h1 class="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight">
+                            SEO Forensics
+                        </h1>
+                        <p class="mt-6 text-lg sm:text-xl max-w-2xl mx-auto text-indigo-100">
+                           A powerful SEO analysis tool to audit websites, identify issues, and get actionable recommendations.
+                        </p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-lg p-6 rounded-2xl shadow-2xl mt-12 max-w-3xl mx-auto border border-white/30">
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <input type="url" id="url-input" placeholder="Enter website URL..." class="flex-grow p-4 border-2 border-transparent rounded-lg focus:ring-4 focus:ring-white/50 focus:border-indigo-300 transition text-lg bg-white/20 text-white placeholder-indigo-200 outline-none">
+                            <button id="analyze-btn" class="bg-white text-indigo-600 font-bold py-4 px-8 rounded-lg hover:bg-indigo-100 focus:outline-none focus:ring-4 focus:ring-white/50 transition-all duration-300 ease-in-out flex items-center justify-center text-lg active:scale-95 shadow-lg">
+                                <svg id="analyze-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                Analyze Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Section -->
+        <div id="analysis-section" class="hidden">
+            <div class="max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
+                <div id="loader" class="text-center my-16 hidden">
+                    <div class="inline-block w-12 h-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-indigo-600 border-l-slate-200 rounded-full animate-spin"></div>
+                    <p id="loader-text" class="mt-4 text-slate-600 font-medium text-lg">Performing SEO Audit...</p>
+                </div>
+                
+                <div id="error-message" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-8" role="alert">
+                    <p class="font-bold">Analysis Failed</p>
+                    <p id="error-text"></p>
+                </div>
+
+                <div id="results-container" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div id="summary-col" class="lg:col-span-4"></div>
+                    <div id="details-col" class="lg:col-span-8 space-y-6"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="print-version" class="pdf-export-source"></div>
+
+    <script type="module">
+        // --- Global State & Elements ---
+        const pageElements = {
+            urlInput: document.getElementById('url-input'),
+            analyzeBtn: document.getElementById('analyze-btn'),
+            homepage: document.getElementById('homepage'),
+            analysisSection: document.getElementById('analysis-section'),
+            loader: document.getElementById('loader'),
+            loaderText: document.getElementById('loader-text'),
+            resultsContainer: document.getElementById('results-container'),
+            summaryCol: document.getElementById('summary-col'),
+            detailsCol: document.getElementById('details-col'),
+            errorMessage: document.getElementById('error-message'),
+            errorText: document.getElementById('error-text'),
+            printVersionContainer: document.getElementById('print-version')
+        };
+        let pageContent = {
+            fullText: '',
+            title: '',
+            h1: '',
+            doc: null,
+            url: ''
+        };
+
+        // --- Helper: Render Status with Icons ---
+        function renderStatus(value, status) {
+            let icon = '';
+            let colorClass = '';
+            let valuePrefix = '';
+
+            switch (status) {
+                case 'good':
+                    icon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-1 inline-block" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>';
+                    colorClass = 'text-green-700';
+                    break;
+                case 'warning':
+                    icon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500 mr-1 inline-block" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.216 3.001-1.742 3.001H4.42c-1.526 0-2.492-1.667-1.742-3.001l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-8a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>';
+                    colorClass = 'text-yellow-700';
+                    break;
+                case 'bad':
+                    icon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 mr-1 inline-block" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>';
+                    colorClass = 'text-red-700';
+                    break;
+                case 'neutral':
+                    icon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500 mr-1 inline-block" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>';
+                    colorClass = 'text-slate-700';
+                    break;
+                default:
+                    colorClass = 'text-slate-700';
+            }
+            if (value === 'Present' || value === 'Missing') {
+                 valuePrefix = ''; // No extra prefix for these specific values
+            } else if (status === 'good' || status === 'warning' || status === 'bad') {
+                valuePrefix = ''; // Status icon is enough
+            }
+
+            return `<span class="flex items-center justify-end ${colorClass}">${icon} <span class="ml-1">${valuePrefix}${value}</span></span>`;
+        }
+
+        // --- Event Listeners ---
+        pageElements.analyzeBtn.addEventListener('click', handleAnalysis);
+
+        // --- Helper: Validate URL ---
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        // --- Helper: Show Error Message ---
+        function showError(message, isInputError = false) {
+            pageElements.errorText.textContent = message;
+            if (isInputError) {
+                pageElements.urlInput.classList.add('border-red-500', 'focus:ring-red-500');
+                pageElements.urlInput.focus();
+            } else {
+                pageElements.urlInput.classList.remove('border-red-500', 'focus:ring-red-500');
+            }
+            setUIMode('error');
+        }
+
+        // --- Helper: Render Score Gauge ---
+        function renderScoreGauge(score) {
+            const { colorClass, strokeClass, remark } = getScoreStyling(score);
+            const radius = 45;
+            const circumference = 2 * Math.PI * radius;
+            // const offset = circumference - (score / 100) * circumference; // Initial state, will be animated by JS
+
+            return `
+                <div class="relative w-40 h-40 mx-auto mb-2">
+                    <svg class="w-full h-full" viewBox="0 0 100 100">
+                        <circle
+                            class="text-slate-200 stroke-current"
+                            stroke-width="10"
+                            cx="50"
+                            cy="50"
+                            r="${radius}"
+                            fill="transparent"
+                        />
+                        <circle
+                            class="progress-ring__circle ${strokeClass} stroke-current"
+                            stroke-width="10"
+                            stroke-linecap="round"
+                            cx="50"
+                            cy="50"
+                            r="${radius}"
+                            fill="transparent"
+                            stroke-dasharray="${circumference} ${circumference}"
+                            stroke-dashoffset="${circumference}" 
+                        />
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span class="text-4xl font-extrabold ${colorClass}">${score}</span>
+                    </div>
+                </div>
+                <p class="text-xl font-semibold ${colorClass}">${remark}</p>
+            `;
+        }
+
+        // --- Helper: Get Score Styling ---
+        function getScoreStyling(score) {
+            if (score >= 75) {
+                return { colorClass: 'text-green-600', strokeClass: 'stroke-green-600', remark: 'Excellent', hexColor: '#10B981' }; // Tailwind green-600
+            } else if (score >= 50) {
+                return { colorClass: 'text-yellow-500', strokeClass: 'stroke-yellow-500', remark: 'Good', hexColor: '#F59E0B' };    // Tailwind yellow-500
+            } else if (score >= 25) {
+                return { colorClass: 'text-orange-500', strokeClass: 'stroke-orange-500', remark: 'Needs Improvement', hexColor: '#F97316' }; // Tailwind orange-500
+            } else {
+                return { colorClass: 'text-red-600', strokeClass: 'stroke-red-600', remark: 'Poor', hexColor: '#DC2626' };        // Tailwind red-600
+            }
+        }
+        
+        // --- Main Handler ---
+        async function handleAnalysis() {
+            const url = pageElements.urlInput.value.trim();
+            if (!isValidUrl(url)) {
+                showError("Please enter a valid URL, including http:// or https://", true);
+                return;
+            }
+            
+            setUIMode('loading', 'Performing SEO Audit...');
+            pageContent.url = url;
+
+            try {
+                // Using a proxy to bypass CORS issues in a client-side environment
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`Failed to fetch URL. Status: ${response.status}`);
+                
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                pageContent.doc = doc;
+                pageContent.fullText = doc.body.innerText || "";
+                pageContent.title = doc.querySelector('title')?.textContent.trim() || '';
+                pageContent.h1 = doc.querySelector('h1')?.textContent.trim() || '';
+
+                const results = {
+                    meta: analyzeMetaTags(doc, pageContent.url), // Pass URL for lang check context
+                    headings: analyzeHeadings(doc),
+                    content: analyzeContent(doc), // Will enhance later
+                    images: analyzeImages(doc),
+                    links: analyzeLinks(doc, pageContent.url),
+                    security: analyzeSecurity(pageContent.url), // New
+                    structuredData: analyzeStructuredData(doc) // New
+                };
+                
+                renderResults(results, pageContent.url);
+                preparePrintVersion(results, pageContent.url); 
+                setUIMode('results');
+
+            } catch (error) {
+                console.error("Analysis Error:", error);
+                let userErrorMessage = `Could not analyze the website. The site may be down, blocking requests, or have a strict security policy. Details: ${error.message}`;
+                // Provide a more user-friendly message for common network errors
+                if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                    userErrorMessage = "A network error occurred. This may be due to a temporary issue with the analysis service, an ad-blocker, or a browser privacy setting. Please disable any ad-blockers and try again. If the problem persists, the service may be temporarily unavailable.";
+                }
+                showError(userErrorMessage);
+                setUIMode('error');
+            }
+        }
+        
+        async function handlePDFExport(e) {
+            const printBtn = e.target.closest('#print-btn');
+            if (!printBtn) return;
+
+            printBtn.disabled = true;
+            printBtn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div> Generating...`;
+
+            const element = document.getElementById('print-version');
+            // Temporarily make the element visible for capture
+            element.classList.remove('pdf-export-source');
+
+            const url = new URL(pageContent.url);
+            const filename = `SEO-Report-${url.hostname}.pdf`;
+
+            const opt = {
+                margin:       0.5,
+                filename:     filename,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            await html2pdf().set(opt).from(element).save();
+            
+            // Hide the element again after capture
+            element.classList.add('pdf-export-source');
+
+            printBtn.disabled = false;
+            printBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>Export Report (PDF)`;
+        }
+        
+        // --- UI Rendering ---
+        function setUIMode(mode, loaderText = 'Loading...') {
+            pageElements.homepage.classList.toggle('hidden', mode !== 'home');
+            pageElements.analysisSection.classList.toggle('hidden', mode === 'home');
+            pageElements.loader.classList.toggle('hidden', mode !== 'loading');
+            pageElements.resultsContainer.classList.toggle('hidden', mode !== 'results');
+            pageElements.errorMessage.classList.toggle('hidden', mode !== 'error');
+            if (mode === 'loading') {
+                pageElements.loaderText.textContent = loaderText;
+            } else if (mode === 'home') {
+                 pageElements.urlInput.value = '';
+            }
+        }
+
+        function createResultCard(title, recommendations, checks, icon) {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-6 rounded-xl shadow-sm border border-slate-200 result-card';
+            
+            let checksHtml = `<ul class="divide-y divide-slate-100">${checks.map(check => `<li class="flex items-start justify-between py-4 border-b border-slate-100 last:border-b-0"><span class="font-semibold text-slate-800">${check.label}</span><div class="text-right ml-4 flex-shrink-0">${renderStatus(check.value, check.status)}</div></li>`).join('')}</ul>`;
+
+            let recommendationsHtml = recommendations.length > 0
+                ? `<div class="mt-5 p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg">
+                       <h4 class="font-bold text-amber-800">Expert Recommendations</h4>
+                       <ul class="list-disc list-inside mt-2 text-amber-700 text-sm space-y-1.5">${recommendations.map(rec => `<li>${rec}</li>`).join('')}</ul>
+                   </div>`
+                : '';
+
+            card.innerHTML = `<div class="flex items-center mb-4"><div class="bg-indigo-100 text-indigo-600 rounded-lg p-2 mr-4">${icon}</div><h3 class="text-2xl font-bold text-slate-900">${title}</h3></div>${checksHtml}${recommendationsHtml}`;
+            return card;
+        }
+
+        function renderResults(results, analyzedUrl) {
+            let totalAchievedScore = 0;
+            let totalMaxScore = 0;
+            const icons = { 
+                meta: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>`, 
+                headings: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5h8M13 9h5M13 13h8M13 17h5M6 5h.01M6 9h.01M6 13h.01M6 17h.01" /></svg>`, 
+                content: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`, 
+                images: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`, 
+                links: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>`,
+                security: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>`,
+                structuredData: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /><path d="M17 10V7a2 2 0 00-2-2H9a2 2 0 00-2 2v3" /><path d="M7 14h10" /></svg>`
+            };
+            
+            pageElements.detailsCol.innerHTML = '';
+            for (const key in results) {
+                const result = results[key];
+                if (result.score) { totalAchievedScore += result.score.achieved; totalMaxScore += result.score.max; }
+                pageElements.detailsCol.appendChild(createResultCard(result.title, result.recs, result.checks, icons[key]));
+            }
+
+            const finalScore = totalMaxScore > 0 ? Math.round((totalAchievedScore / totalMaxScore) * 100) : 0;
+            
+            pageElements.summaryCol.innerHTML = '';
+            const summaryCard = document.createElement('div');
+            summaryCard.className = 'bg-white p-6 rounded-xl shadow-sm border border-slate-200 sticky top-8';
+            summaryCard.innerHTML = `
+                <div class="text-center border-b border-slate-200 pb-6"><h3 class="text-lg font-bold text-slate-500 uppercase tracking-wider mb-4">Overall SEO Score</h3>${renderScoreGauge(finalScore)}</div>
+                <div class="mt-6">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Audited URL</h3>
+                    <a href="${analyzedUrl}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline break-all font-semibold">${analyzedUrl}</a>
+                </div>
+                 <div class="mt-8 space-y-4">
+                     <button id="print-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center text-base"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>Export Report (PDF)</button>
+                     <button id="start-over-btn" class="w-full bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-lg hover:bg-slate-300 transition-all active:scale-95 flex items-center justify-center text-base"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 4l16 16" /></svg>Start New Audit</button>
+                 </div>`;
+            pageElements.summaryCol.appendChild(summaryCard);
+            
+            pageElements.summaryCol.addEventListener('click', (e) => {
+                if(e.target.closest('#print-btn')) handlePDFExport(e);
+                if(e.target.closest('#start-over-btn')) setUIMode('home');
+            });
+
+            const circle = pageElements.summaryCol.querySelector('.progress-ring__circle');
+            if(circle) { const radius = circle.r.baseVal.value; const circumference = 2 * Math.PI * radius; const offset = circumference - finalScore / 100 * circumference; circle.style.strokeDasharray = `${circumference} ${circumference}`; circle.style.strokeDashoffset = circumference; setTimeout(() => circle.style.strokeDashoffset = offset, 100); }
+        }
+        
+        function preparePrintVersion(results, url) { 
+            let totalAchievedScore=0;
+            let totalMaxScore=0;
+            Object.values(results).forEach(result=>{if(result.score){totalAchievedScore+=result.score.achieved;totalMaxScore+=result.score.max;}});
+            const finalScore=totalMaxScore>0?Math.round((totalAchievedScore/totalMaxScore)*100):0;
+            const {colorClass,remark}=getScoreStyling(finalScore);
+
+            // Helper to get print status class
+            function getPrintStatusClass(status) {
+                if (status === 'good') return 'print-status-good';
+                if (status === 'warning') return 'print-status-warning';
+                if (status === 'bad') return 'print-status-bad';
+                return 'print-status-neutral';
+            }
+
+            let detailsHtml=Object.values(results).map(result=>`
+                <div class="print-card">
+                    <h3 class="print-card-title">${result.title}</h3>
+                    <ul>
+                        ${result.checks.map(check=>`<li class="print-check-item"><span>${check.label}</span><span class="${getPrintStatusClass(check.status)}">${check.value}</span></li>`).join('')}
+                    </ul>
+                    ${result.recs.length>0?`<div class="print-recs"><h4 class="print-recs-title">Recommendations</h4><ul class="print-recs-list">${result.recs.map(rec=>`<li>${rec}</li>`).join('')}</ul></div>`:''}
+                </div>
+            `).join('');
+            
+            pageElements.printVersionContainer.innerHTML=`
+                <div class="p-8 flex flex-col gap-8">
+                    <div class="print-header">
+                        <div><h1 class="print-title">SEO Forensics Report</h1><p class="print-url">${url}</p></div>
+                        <div class="text-right"><div class="print-logo">SEO Forensics</div><p class="print-date">Generated: ${new Date().toLocaleDateString()}</p></div>
+                    </div>
+                    <div class="print-score-container">
+                        <div class="print-gauge">
+                            <svg viewBox="0 0 100 100" width="150" height="150">
+                                <circle cx="50" cy="50" r="45" stroke-width="10" stroke="#e5e7eb" fill="transparent"/>
+                                <circle cx="50" cy="50" r="45" stroke-width="10" stroke="${getScoreStyling(finalScore).hexColor}" fill="transparent" stroke-linecap="round" 
+                                        stroke-dasharray="${2*Math.PI*45}" 
+                                        stroke-dashoffset="${(1-finalScore/100)*(2*Math.PI*45)}" 
+                                        transform="rotate(-90 50 50)" />
+                                <text x="50" y="52" text-anchor="middle" dominant-baseline="middle" fill="${getScoreStyling(finalScore).hexColor}" style="font-size: 3em; font-weight: 800;">${finalScore}</text>
+                            </svg>
+                        </div>
+                        <div class="print-remark" style="color: ${getScoreStyling(finalScore).hexColor}; font-size: 1.5em; font-weight: 700; margin-left: 2rem;"><p>Overall Score</p><p>${remark}</p></div>
+                    </div>
+                    <div class="print-details space-y-6">${detailsHtml}</div>
+                    <div class="print-footer">Report generated by SEO Forensics.</div>
+                </div>
+            `;
+         }
+        function analyzeMetaTags(doc, url) { // Added url parameter
+            const checks = [];
+            const recs = [];
+            let achieved = 0;
+            const max = 28; // Adjusted max score
+
+            // HTML Lang attribute
+            const htmlLang = doc.documentElement.getAttribute('lang');
+            if (htmlLang) {
+                checks.push({ label: 'HTML Lang Attribute', value: htmlLang, status: 'good' });
+                achieved += 2;
+            } else {
+                checks.push({ label: 'HTML Lang Attribute', value: 'Missing', status: 'warning' });
+                recs.push('Add a `lang` attribute to the `<html>` tag to declare the language of the page.');
+            }
+            
+            // Charset
+            const charset = doc.querySelector('meta[charset]');
+            if (charset) {
+                checks.push({ label: 'Charset', value: charset.getAttribute('charset'), status: 'good' });
+                achieved += 2;
+            } else {
+                checks.push({ label: 'Charset', value: 'Missing', status: 'bad' });
+                recs.push('Specify character encoding by adding `<meta charset="UTF-8">` in the `<head>`.');
+            }
+
+            // Title Tag
+            const title = doc.querySelector('title');
+            const titleText = title ? title.textContent.trim() : '';
+            if (!titleText) {
+                checks.push({ label: 'Title Tag', value: 'Missing', status: 'bad' });
+                recs.push('Add a compelling title tag. It\\\'s a critical SEO factor.');
+            } else {
+                achieved += 2; // Points for presence
+                if (titleText.length > 60 || titleText.length < 30) {
+                    checks.push({ label: 'Title Tag Length', value: `${titleText.length} chars`, status: 'warning' });
+                    recs.push('Aim for a title between 30-60 characters for best display.');
+                    achieved += 1; // Partial points for non-optimal length
+                } else {
+                    checks.push({ label: 'Title Tag Length', value: `${titleText.length} chars`, status: 'good' });
+                    achieved += 3; // Points for optimal length
+                }
+            }
+
+            // Meta Description
+            const description = doc.querySelector('meta[name="description"]');
+            const descriptionContent = description ? description.getAttribute('content')?.trim() : '';
+            if (!descriptionContent) {
+                checks.push({ label: 'Meta Description', value: 'Missing', status: 'bad' });
+                recs.push('Add a meta description to influence clicks from search results.');
+            } else {
+                achieved += 2; // Points for presence
+                if (descriptionContent.length > 160 || descriptionContent.length < 70) {
+                    checks.push({ label: 'Meta Description Length', value: `${descriptionContent.length} chars`, status: 'warning' });
+                    recs.push('Aim for a meta description between 70-160 characters.');
+                    achieved += 1; // Partial points
+                } else {
+                    checks.push({ label: 'Meta Description Length', value: `${descriptionContent.length} chars`, status: 'good' });
+                    achieved += 3; // Points for optimal length
+                }
+            }
+
+            // Viewport Tag
+            const viewport = doc.querySelector('meta[name="viewport"]');
+            if (viewport && viewport.getAttribute('content')?.includes('width=device-width')) {
+                checks.push({ label: 'Viewport Tag', value: 'Present & Correct', status: 'good' });
+                achieved += 3;
+            } else if (viewport) {
+                checks.push({ label: 'Viewport Tag', value: 'Present, may need review', status: 'warning' });
+                recs.push('Ensure viewport meta tag includes "width=device-width, initial-scale=1".');
+                achieved += 1;
+            }
+            else {
+                checks.push({ label: 'Viewport Tag', value: 'Missing', status: 'bad' });
+                recs.push('Add a viewport meta tag (e.g., <meta name="viewport" content="width=device-width, initial-scale=1.0">) to ensure your site is mobile-friendly.');
+            }
+
+            // Canonical Tag
+            const canonical = doc.querySelector('link[rel="canonical"]');
+            if (canonical && canonical.getAttribute('href')) {
+                checks.push({ label: 'Canonical Tag', value: 'Present', status: 'good' });
+                achieved += 3;
+            } else {
+                checks.push({ label: 'Canonical Tag', value: 'Missing', status: 'warning' });
+                recs.push('Consider adding a canonical tag (e.g., <link rel="canonical" href="your-preferred-url">) to prevent duplicate content issues.');
+                 achieved += 1; // Partial for missing but not critical bad
+            }
+
+            // Open Graph Title
+            const ogTitle = doc.querySelector('meta[property="og:title"]');
+            if (ogTitle && ogTitle.getAttribute('content')?.trim()) {
+                checks.push({ label: 'Open Graph Title', value: 'Present', status: 'good' });
+                achieved += 2;
+            } else {
+                checks.push({ label: 'Open Graph Title', value: 'Missing', status: 'warning' });
+                recs.push('Add an Open Graph title tag (og:title) to improve how your content appears when shared on social media.');
+            }
+
+            // Open Graph Description
+            const ogDescription = doc.querySelector('meta[property="og:description"]');
+            if (ogDescription && ogDescription.getAttribute('content')?.trim()) {
+                checks.push({ label: 'Open Graph Description', value: 'Present', status: 'good' });
+                achieved += 2;
+            } else {
+                checks.push({ label: 'Open Graph Description', value: 'Missing', status: 'warning' });
+                recs.push('Add an Open Graph description tag (og:description) for better social media snippets.');
+            }
+            
+            achieved = Math.min(achieved, max);
+            return { title: 'Meta Tags & Social Markup', checks, recs, score: { achieved, max } };
+        }
+        function analyzeHeadings(doc){ 
+            const checks = []; 
+            const recs = []; 
+            let achieved = 0; 
+            const max = 15; // Adjusted max
+            const h1s = Array.from(doc.querySelectorAll('h1'));
+            const h2s = Array.from(doc.querySelectorAll('h2'));
+            const h3s = Array.from(doc.querySelectorAll('h3'));
+            // ... add h4, h5, h6 if desired for more detail
+
+            if (h1s.length === 0) { 
+                checks.push({ label: 'H1 Tag', value: 'Missing', status: 'bad' }); 
+                recs.push('The page is missing an H1 tag. Add one unique H1 to describe the main topic.'); 
+            } else if (h1s.length > 1) { 
+                checks.push({ label: 'H1 Tag', value: `${h1s.length} found`, status: 'warning' }); 
+                recs.push('Multiple H1 tags found. It\'s best practice to use only one H1 per page for clarity.'); 
+                achieved += 3; // Partial score for having H1s but too many
+            } else { 
+                checks.push({ label: 'H1 Tag', value: `1 found`, status: 'good' }); 
+                achieved += 5; 
+            } 
+
+            // Heading Order Check (Basic)
+            // This is a simplified check. A more robust check would involve traversing the DOM tree.
+            let h1Found = false;
+            let h2BeforeH1 = false;
+            let subheadingsWithoutH1 = false;
+            const headings = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+
+            if (headings.length > 0) {
+                if (headings[0].tagName.toLowerCase() !== 'h1' && h1s.length === 0 && (h2s.length > 0 || h3s.length > 0)) {
+                    subheadingsWithoutH1 = true;
+                }
+                for (let i = 0; i < headings.length; i++) {
+                    const currentTag = headings[i].tagName.toLowerCase();
+                    if (currentTag === 'h1') {
+                        h1Found = true;
+                    }
+                    if (currentTag === 'h2' && !h1Found) {
+                        h2BeforeH1 = true;
+                        break; 
+                    }
+                }
+            }
+
+            if (h2BeforeH1) {
+                checks.push({ label: 'Heading Order', value: 'H2 appears before H1', status: 'warning' });
+                recs.push('Ensure H1 tag appears before any H2 tags for logical document structure.');
+            } else if (subheadingsWithoutH1) {
+                 checks.push({ label: 'Heading Order', value: 'Subheadings present without H1', status: 'warning' });
+                 recs.push('Add an H1 tag as the main heading before using subheadings (H2, H3, etc.).');
+            } else if (h1s.length > 0) { // Only give points if H1 exists and order is not obviously wrong
+                checks.push({ label: 'Heading Order', value: 'Seems logical', status: 'good' });
+                achieved += 3;
+            }
+
+
+            ['h2', 'h3', 'h4'].forEach(level => { 
+                const count = doc.querySelectorAll(level).length; 
+                checks.push({ label: `${level.toUpperCase()} Tags`, value: `${count} found`, status: 'neutral'}); 
+                if (count > 0) achieved += (level === 'h2' ? 2 : 1); // Small points for presence of subheadings
+            }); 
+            
+            achieved = Math.min(achieved, max);
+            return { title: 'Heading Structure', checks, recs, score: { achieved, max } }; 
+        }
+        function analyzeContent(doc){ const checks = []; const recs = []; let achieved = 0; const max = 10; const text = doc.body.innerText || ""; const wordCount = text.trim().split(/\\s+/).filter(Boolean).length; if (wordCount < 300) { checks.push({ label: 'Word Count', value: `${wordCount} words`, status: 'warning' }); recs.push('The page has low word count ("thin content"). Consider adding more relevant, high-quality content to rank better.'); achieved += 3; } else { checks.push({ label: 'Word Count', value: `${wordCount} words`, status: 'good' }); achieved += 10; } return { title: 'Content Analysis', checks, recs, score: { achieved, max } }; }
+        function analyzeImages(doc) { 
+            const checks = []; 
+            const recs = []; 
+            let achieved = 0; 
+            const max = 15; // Adjusted max from 20, as quality/size is hard client-side
+            const images = Array.from(doc.querySelectorAll('img')); 
+            const totalImages = images.length; 
+
+            if (totalImages > 0) { 
+                const imagesMissingAlt = images.filter(img => !img.alt || img.alt.trim() === ''); 
+                if (imagesMissingAlt.length > 0) { 
+                    checks.push({ label: 'Image Alt Attributes', value: `${imagesMissingAlt.length} missing`, status: 'bad' }); 
+                    recs.push('Add descriptive alt attributes to all images for accessibility and SEO.'); 
+                } else { 
+                    checks.push({ label: 'Image Alt Attributes', value: 'All present', status: 'good' }); 
+                    achieved += 5; 
+                } 
+
+                const genericNamePatterns = [/image[0-9]*\\.(jpg|jpeg|png|gif)/i, /pic[0-9]*\\.(jpg|jpeg|png|gif)/i, /untitled\\.(jpg|jpeg|png|gif)/i, /logo\\.(jpg|jpeg|png|gif)/i];
+                let genericFilenames = 0;
+                images.forEach(img => {
+                    const src = img.getAttribute('src');
+                    if (src) {
+                        const filename = src.substring(src.lastIndexOf('/') + 1);
+                        if (genericNamePatterns.some(pattern => pattern.test(filename))) {
+                            genericFilenames++;
+                        }
+                    }
+                });
+
+                if (genericFilenames > 0) {
+                    checks.push({ label: 'Image Filenames', value: `${genericFilenames} potentially non-descriptive`, status: 'warning' });
+                    recs.push('Use descriptive filenames for images (e.g., `blue-widget.jpg` instead of `image1.jpg`).');
+                } else {
+                    checks.push({ label: 'Image Filenames', value: 'Seem descriptive', status: 'good' });
+                    achieved += 5;
+                }
+                
+                // Image optimization is complex client-side. Placeholder.
+                checks.push({ label: 'Image Optimization (Size/Compression)', value: 'Manual check recommended', status: 'neutral' });
+                recs.push('Ensure images are appropriately sized for their display dimensions and compressed for fast loading. Tools like Squoosh or TinyPNG can help.');
+                achieved += 2; 
+
+            } else { 
+                checks.push({ label: 'Images', value: 'No images found', status: 'neutral' });
+                recs.push('Consider adding relevant images to enhance content if appropriate for this page.'); 
+            } 
+            achieved = Math.min(achieved, max);
+            return { title: 'Image Analysis', checks, recs, score: { achieved, max } }; 
+        }
+        function analyzeLinks(doc, baseUrl) {
+            const checks = [];
+            const recs = [];
+            let achieved = 0;
+            const max = 15; 
+            const links = Array.from(doc.querySelectorAll('a'));
+            const genericAnchorTexts = [/click here/i, /learn more/i, /read more/i, /here/i, /this link/i, /^\\s*$/]; // Added empty check
+            let genericAnchors = 0;
+
+            links.forEach(link => {
+                const anchorText = link.textContent.trim();
+                if (genericAnchorTexts.some(pattern => pattern.test(anchorText))) {
+                    genericAnchors++;
+                }
+            });
+
+            if (genericAnchors > 0) {
+                checks.push({ label: 'Anchor Text Quality', value: `${genericAnchors} generic or empty`, status: 'warning' });
+                recs.push('Use descriptive anchor text for links instead of generic phrases like "click here" or empty links.');
+            } else if (links.length > 0) {
+                checks.push({ label: 'Anchor Text Quality', value: 'Seems descriptive', status: 'good' });
+                achieved += 5;
+            } else {
+                 checks.push({ label: 'Anchor Text Quality', value: 'No links to analyze', status: 'neutral' });
+            }
+
+            const internalLinks = links.filter(link => {
+                try {
+                    const linkUrl = new URL(link.href, baseUrl); // Resolve relative URLs
+                    const pageUrl = new URL(baseUrl);
+                    return linkUrl.hostname === pageUrl.hostname;
+                } catch (e) { return false; } // Invalid URL
+            });
+            const externalLinks = links.filter(link => {
+                 try {
+                    const linkUrl = new URL(link.href, baseUrl);
+                    const pageUrl = new URL(baseUrl);
+                    return linkUrl.hostname !== '' && linkUrl.hostname !== pageUrl.hostname;
+                } catch (e) { return false; }
+            });
+            
+            if (internalLinks.length === 0 && links.length > 0) {
+                checks.push({ label: 'Internal Links', value: 'None found', status: 'warning' });
+                recs.push('Add internal links to help search engines and users navigate your site structure.');
+            } else {
+                checks.push({ label: 'Internal Links', value: `${internalLinks.length} found`, status: internalLinks.length > 0 ? 'good' : 'neutral' });
+                if (internalLinks.length > 0) achieved += 3;
+            }
+            
+            checks.push({ label: 'External Links', value: `${externalLinks.length} found`, status: 'neutral' });
+            if (externalLinks.length > 0) achieved += 2; 
+
+            achieved = Math.min(achieved, max);
+            return { title: 'Link Analysis', checks, recs, score: { achieved, max } };
+        }
+
+        // --- NEW Analysis Functions ---
+        function analyzeSecurity(url) {
+            const checks = [];
+            const recs = [];
+            let achieved = 0;
+            const max = 5;
+
+            if (url.startsWith('https://')) {
+                checks.push({ label: 'HTTPS Encryption', value: 'Enabled', status: 'good' });
+                achieved = 5;
+            } else {
+                checks.push({ label: 'HTTPS Encryption', value: 'Not Enabled (HTTP)', status: 'bad' });
+                recs.push('Migrate your site to HTTPS. HTTPS is a ranking factor and crucial for user trust and security.');
+            }
+            return { title: 'Security', checks, recs, score: { achieved, max } };
+        }
+
+        function analyzeStructuredData(doc) {
+            const checks = [];
+            const recs = [];
+            let achieved = 0;
+            const max = 5;
+
+            const jsonLdScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+            if (jsonLdScripts.length > 0) {
+                checks.push({ label: 'JSON-LD Structured Data', value: 'Found', status: 'good' });
+                achieved = 5;
+                recs.push('Validate your structured data using Google\\\'s Rich Results Test tool.');
+            } else {
+                checks.push({ label: 'JSON-LD Structured Data', value: 'Not found', status: 'warning' });
+                recs.push('Consider adding JSON-LD structured data to help search engines understand your content and enable rich snippets.');
+            }
+            return { title: 'Structured Data (Schema)', checks, recs, score: { achieved, max } };
+        }
+    </script>
+</body>
+</html>
